@@ -1,0 +1,13 @@
+# Ejecutables de Windows
+*.exe
+
+# Archivos objeto y temporales
+*.o
+*.obj
+
+# Carpetas de configuración de VS Code (opcional pero recomendado)
+.vscode/
+
+# Archivos de depuración
+*.pdb
+*.ilk
