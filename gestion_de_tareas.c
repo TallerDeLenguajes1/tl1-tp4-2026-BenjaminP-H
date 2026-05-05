@@ -3,20 +3,24 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef struct Tarea
-{
-    int TareaID;
-    char *Descripcion;
-    int Duracion;
+/* =========================================================
+   ZONA 1: DEFINICIÓN DE ESTRUCTURAS
+   ========================================================= */
+typedef struct Tarea {
+    int TareaID;       // Identificador numérico
+    char *Descripcion; // Puntero para memoria dinámica (texto de largo variable)
+    int Duracion;      // Valor entre 10 y 100
 } Tarea;
 
-typedef struct Nodo
-{
-    Tarea T;
-    struct Nodo *Siguiente; //Importante!!
-}Nodo;
+typedef struct Nodo {
+    Tarea T;              // La carga útil (los datos de la tarea)
+    struct Nodo *Siguiente; // El "gancho" que guarda la dirección del próximo nodo //Muy IMPORTANTE    
+} Nodo;
 
 //MAS IMPORTANTES!
+/* =========================================================
+   ZONA 2: PROTOTIPOS (El índice del programa)
+   ========================================================= */
 
 //crea una lista vacia para comenzar
 Nodo *crearListaVacia();
@@ -24,7 +28,7 @@ Nodo *crearListaVacia();
 Nodo *crearTarea(int *TareaID, char Descripcion[], int Duracion);//puntero de id por que hay que cambiar el id sumando constantemente
 
 //Insertar Nodos o Tareas ala lista
-void insetarTarea(Nodo **ListaPendiente, Nodo *tareaCreada); //funciona
+void insertarTarea(Nodo **ListaPendiente, Nodo *tareaCreada); //funciona
 void insertarTareaAlFinal(Nodo **ListaPendiente, Nodo *tareaCreada);//para mi gusto este es mejor que el anterior
 
 //Mostrar Nodos o Listas Enlazadas
@@ -41,8 +45,13 @@ Nodo *BuscarTareaPorDescripcion(Nodo **ListaPendiente, char palabraClave[]);
 
 void LiberarMemoria(Nodo **Listas);
 
+/* =========================================================
+   ZONA 3: CUERPO PRINCIPAL (MAIN)
+   ========================================================= */
+
 int main()
 {
+     // Inicializamos las cabezas de las listas en NULL
     Nodo *ListaPendiente = crearListaVacia();
     Nodo *ListaTerminada = crearListaVacia();
 
@@ -52,6 +61,9 @@ int main()
     int opcion = 1;
     int IDBuscado;
     int opcionBusqueda;
+
+    srand(time(NULL)); // Semilla para que rand() cambie siempre
+
     while (opcion != 0)
     {
         printf("Eliga una de las siguientes opciones a realizar:\n");
@@ -74,8 +86,10 @@ int main()
                 gets(Descripcion);//consultar si puedo usar fgets
                 
                 Duracion = 10 + rand() % 91; //entre 10 y 100
+                // 1. Fabricamos el nodo con los datos de la tarea
 
                 Nodo *tareaCreada = crearTarea(&TareaID, Descripcion, Duracion);
+                // 2. Insertamos el nodo en la lista
                 insertarTareaAlFinal(&ListaPendiente, tareaCreada);
                 printf("Tarea %d cargada con exito.\n", tareaCreada->T.TareaID);
                 break;
@@ -84,22 +98,23 @@ int main()
                 printf("\n--- Marcar Tarea como Realizada ---\n");
                 printf("ID de la Tarea Realizada: ");
                 scanf("%d", &IDBuscado);
-
+                // 1. Buscamos y desenganchamos de 'Pendientes'
                 Nodo *tareaRealizada = quitarNodo(&ListaPendiente,IDBuscado);
 
                 if (tareaRealizada !=  NULL)
                 {
-                    insetarTareaAlFinal(&ListaTerminada, tareaRealizada);
+                     // 2. Enganchamos el mismo nodo en 'Realizadas'
+                    insertarTareaAlFinal(&ListaTerminada, tareaRealizada);
                     printf("Tarea %d movida con exito a Realizadas.\n", IDBuscado);
                 }else
                 {
                     printf("Tarea %d no encontrada.\n", IDBuscado);
                 }
                 break;
+
             case 3:
                 printf("\n======= TAREAS PENDIENTES =======");
                 mostrarListas(ListaPendiente);
-                
                 printf("\n======= TAREAS REALIZADAS =======");
                 mostrarListas(ListaTerminada);
                 break;
@@ -159,11 +174,12 @@ int main()
 
                 break;
             case 0:
+                // SIEMPRE liberar memoria antes de salir
                     printf("\nLiberando memoria de tareas pendientes...\n");
-                    liberarLista(&ListaPendiente);
+                    LiberarMemoria(&ListaPendiente);
                     
                     printf("Liberando memoria de tareas terminadas...\n");
-                    liberarLista(&ListaTerminada);
+                    LiberarMemoria(&ListaTerminada);
                     
                     printf("Programa finalizado. ¡Hasta luego!\n");
                 break;
@@ -174,12 +190,16 @@ int main()
     
     return 0;
 }
-
+/* =========================================================
+   ZONA 4: FUNCIONES DE MEMORIA Y LISTAS
+   ========================================================= */
+// Devuelve NULL para decir que la lista arranca limpia
 Nodo *crearListaVacia()
 {
     return NULL;
 }
-
+// PASO DE DATOS: Aquí pides memoria para el "contenedor" (Nodo) 
+// y para el "contenido" (Descripcion).
 Nodo *crearTarea(int *TareaID, char Descripcion[], int Duracion)
 {
     //reservo memoria para el nodo nuevo
@@ -187,31 +207,33 @@ Nodo *crearTarea(int *TareaID, char Descripcion[], int Duracion)
 
     //Cargamos el ID y lo aumentamo para la próxima vez
     tareaCreada->T.TareaID = *TareaID;
-    (*TareaID)++;//sumo 1 al id
+    (*TareaID)++;//sumo 1 al id // Modifica el valor en el main usando el puntero
 
     //Cargo la duración de la tarea
     tareaCreada->T.Duracion = Duracion;
 
     //strlen(Descripcion): Mide cuántas letras tiene el nombre que escribió el usuario (por ejemplo, "Lavar auto" tiene 10).
     //+ 1: Reserva un espacio extra para el carácter invisible \0 que le dice a C dónde termina el texto.
-       
+    
+    // Apartamos el espacio justo para el texto + el caracter final \0
+
     tareaCreada->T.Descripcion = (char *)malloc(sizeof(char) * (strlen(Descripcion) + 1));
 
 
     strcpy(tareaCreada->T.Descripcion, Descripcion);//guarda la descripcion de la tarea
 
-    tareaCreada->Siguiente = NULL;
+    tareaCreada->Siguiente = NULL; // Todo nodo nuevo nace "suelto"
 
     return tareaCreada;
 }
 
-void insetarTarea(Nodo **ListaPendiente, Nodo *tareaCreada)
+void insertarTarea(Nodo **ListaPendiente, Nodo *tareaCreada)
 {
     tareaCreada->Siguiente = *ListaPendiente;
     *ListaPendiente = tareaCreada;
 }
 
-void insetarTareaAlFinal(Nodo **ListaPendiente, Nodo *tareaCreada)
+void insertarTareaAlFinal(Nodo **ListaPendiente, Nodo *tareaCreada)
 {
     if (*ListaPendiente== NULL)
     {
@@ -228,7 +250,7 @@ void insetarTareaAlFinal(Nodo **ListaPendiente, Nodo *tareaCreada)
 
     }
 }
-
+// RECORRIDO DE LECTURA: Usas un auxiliar para no perder el 'Start'
 void mostrarListas(Nodo *Listas)
 {
     // 1. Creamos un puntero auxiliar 'aux' que apunte al inicio
@@ -249,17 +271,19 @@ void mostrarListas(Nodo *Listas)
             printf("\n----------------------------\n");
             // 4. ¡Paso fundamental!: Movemos el dedo al siguiente nodo
             // Si no haces esto, te quedas siempre en la primera tarea
-            aux = aux->Siguiente;
+            aux = aux->Siguiente; // Salto al siguiente
         }
     }
     
 }
 
 //Muevo tareas entre lista
+// RECORRIDO DE BÚSQUEDA Y EXTRACCIÓN: 
+// Necesitas 'anterior' para que, al sacar uno, los otros dos se den la mano.
 Nodo *quitarNodo(Nodo **ListaPendiente, int IDBuscado)
 {
     Nodo *aux = *ListaPendiente;
-    Nodo *anterior = NULL;
+    Nodo *anterior = NULL; 
 
     while (aux != NULL && aux->T.TareaID != IDBuscado)
     {
@@ -275,11 +299,11 @@ Nodo *quitarNodo(Nodo **ListaPendiente, int IDBuscado)
             *ListaPendiente = aux->Siguiente;
         }else{
             // Si anterior no es NULL, significa que el nodo a eliminar no es el primero
-            anterior->Siguiente = aux->Siguiente;
+            anterior->Siguiente = aux->Siguiente; // Hago el puente
         }
 
         aux->Siguiente = NULL; //Lo aislamos completamente
-        return aux; // Retornamos el nodo eliminado
+        return aux; // Retornamos el nodo eliminado para re-engancharlo luego
     }
     return NULL;
 }
@@ -312,7 +336,7 @@ Nodo *BuscarTareaPorDescripcion(Nodo **ListaPendiente, char palabraClave[])
 
 void LiberarMemoria(Nodo **Listas)
 {
-    Nodo *aux = Listas;
+    Nodo *aux = *Listas;
     Nodo *proximo;
 
     while (aux != NULL)
